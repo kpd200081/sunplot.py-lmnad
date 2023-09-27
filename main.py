@@ -10,8 +10,8 @@ gridspec
 interpolate_field
 
 # rundata_folder = '/home/pkuznetsov/lmnad/data-success/'
-rundata_folder = '/home/pkuznetsov/lmnad/sec2/data/'
-# rundata_folder = '/home/pkuznetsov/lmnad/iwaves/data/'
+# rundata_folder = '/home/pkuznetsov/lmnad/sec2/data/'
+rundata_folder = '/home/pkuznetsov/lmnad/sec3/data/'
 step = 0
 h = 38
 
@@ -167,7 +167,10 @@ dl.load_common_values()
 # plt.show()
 
 # print(dl.x)
-x = [65, 80]
+# x = [70, 85]  # data-suc
+# x = [65, 80]  # sec2
+x = [100, 110]  # sec3
+
 # u_x, s_x, steps = dl.get_u_s_for_x(x)
 #
 # fig = plt.figure()
@@ -210,83 +213,132 @@ x = [65, 80]
 # ax3.invert_yaxis()
 # plt.colorbar(c, ax=ax3)
 #
-F_n, M, steps, fn_d, fn_i = dl.calc_loads_momentum(x, 1025.09, 0, np.Inf, False)
+F_n_old, M_old, steps, fn_d_old, fn_i_old = dl.calc_loads_momentum(x, 1025.09, 0, np.Inf, False)
 t_arr = np.linspace(0, dl.step_to_h(steps - 1), steps)
 t_cut = 10
-F_n[:, 0:t_cut] = np.nan
-M[:, 0:t_cut] = np.nan
+F_n_old[:, 0:t_cut] = np.nan
+M_old[:, 0:t_cut] = np.nan
 # fn_d[:, 0:t_cut, :] = np.nan
 # fn_i[:, 0:t_cut, :] = np.nan
+
+F_n_new, M_new, steps, fn_d_new, fn_i_new = dl.calc_loads_momentum(x, 1025.09, 0, np.Inf, True)
+F_n_new[:, 0:t_cut] = np.nan
+M_new[:, 0:t_cut] = np.nan
 
 fig = plt.figure()
 fig.show()
 figManager = plt.get_current_fig_manager()
 figManager.window.showMaximized()
-gs = gridspec.GridSpec(1, 2, hspace=0.3, wspace=0.15)
+gs = gridspec.GridSpec(2, 2, hspace=0.3, wspace=0.15)
 ax0 = fig.add_subplot(gs[0, 0])
 ax1 = fig.add_subplot(gs[0, 1])
+ax2 = fig.add_subplot(gs[1, 0])
+ax3 = fig.add_subplot(gs[1, 1])
 
-ax0.plot(t_arr / 12.42, F_n[0] / 100000, color='blue', label='F_n(t), 10^5*Н')
-ax0.plot(t_arr / 12.42, M[0] / 1000000, color='red', label='M(t), MН*м')
+ax0.plot(t_arr / 12.42, F_n_old[0] / 100000, color='blue', label='F_n(t), 10^5*Н (ф. Моррисона)')
+ax2.plot(t_arr / 12.42, M_old[0] / 1000000, color='blue', label='M(t), MН*м (ф. Моррисона)')
+ax1.plot(t_arr / 12.42, F_n_old[1] / 100000, color='blue', label='F_n(t), 10^5*Н (ф. Моррисона)')
+ax3.plot(t_arr / 12.42, M_old[1] / 1000000, color='blue', label='M(t), MН*м (ф. Моррисона)')
 
-ax1.plot(t_arr / 12.42, F_n[1] / 100000, color='blue', label='F_n(t), 10^5*Н')
-ax1.plot(t_arr / 12.42, M[1] / 1000000, color='red', label='M(t), MН*м')
-
-F_n, M, steps, fn_d, fn_i = dl.calc_loads_momentum(x, 1025.09, 0, np.Inf, True)
-
-ax0.plot(t_arr / 12.42, F_n[0] / 100000, color='green', label='F_n(t), 10^5*Н (new)')
-ax0.plot(t_arr / 12.42, M[0] / 1000000, color='yellow', label='M(t), MН*м (new)')
-
-ax1.plot(t_arr / 12.42, F_n[1] / 100000, color='green', label='F_n(t), 10^5*Н (new)')
-ax1.plot(t_arr / 12.42, M[1] / 1000000, color='yellow', label='M(t), MН*м (new)')
+ax0.plot(t_arr / 12.42, F_n_new[0] / 100000, color='red', label='F_n(t), 10^5*Н (уточненная ф.)')
+ax2.plot(t_arr / 12.42, M_new[0] / 1000000, color='red', label='M(t), MН*м (уточненная ф.)')
+ax1.plot(t_arr / 12.42, F_n_new[1] / 100000, color='red', label='F_n(t), 10^5*Н (уточненная ф.)')
+ax3.plot(t_arr / 12.42, M_new[1] / 1000000, color='red', label='M(t), MН*м (уточненная ф.)')
 
 ax0.set_title(f"В точке x={x[0]:.2f}")
 ax0.set_xlim([0.3, 5.5])
 ax0.legend()
-ax0.set_xlabel("Время/T_M2")
 ax0.grid()
 
 ax1.set_title(f"В точке x={x[1]:.2f}")
 ax1.set_xlim([0.3, 5.5])
-ax1.set_xlabel("Время/T_M2")
 ax1.legend()
 ax1.grid()
+
+ax2.set_xlim([0.3, 5.5])
+ax2.legend()
+ax2.set_xlabel("Время/T_M2")
+ax2.grid()
+
+ax3.set_xlim([0.3, 5.5])
+ax3.set_xlabel("Время/T_M2")
+ax3.legend()
+ax3.grid()
 
 plt.gcf().set_size_inches(15, 8)
 plt.savefig(
     f"loads_1.png",
     dpi=500, bbox_inches="tight")
 
+ind_0 = np.nanargmax(np.abs(F_n_old[0]))
+ind_1 = np.nanargmax(np.abs(F_n_old[1]))
+
 fig = plt.figure()
 fig.show()
 figManager = plt.get_current_fig_manager()
 figManager.window.showMaximized()
-gs = gridspec.GridSpec(1, 2, hspace=0.3, wspace=0.15)
+gs = gridspec.GridSpec(2, 2, hspace=0.3, wspace=0.15)
 ax0 = fig.add_subplot(gs[0, 0])
 ax1 = fig.add_subplot(gs[0, 1])
+ax2 = fig.add_subplot(gs[1, 0])
+ax3 = fig.add_subplot(gs[1, 1])
 
-# ind = np.argmin(np.abs(t_arr - 1.5 * 12.42))
-ind = np.nanargmax(np.abs(F_n[0]))
-ax0.barh(dl.z, fn_d[0, ind, :], color='yellow', label='F_D(z), Н/м')
-ax0.set_ylabel("Глубина, м")
-ax0.invert_yaxis()
-ax0.barh(dl.z, fn_i[0, ind, :], color='blue', label='F_I(z), Н/м')
+ax0.barh(dl.z, fn_d_old[0, ind_0, :], color='blue', label='ф. Моррисона', height=2.5, alpha=0.5)
+ax2.barh(dl.z, fn_i_old[0, ind_0, :], color='blue', label='ф. Моррисона', height=2.5, alpha=0.5)
+ax1.barh(dl.z, fn_d_old[1, ind_1, :], color='blue', label='ф. Моррисона', height=2.5, alpha=0.5)
+ax3.barh(dl.z, fn_i_old[1, ind_1, :], color='blue', label='ф. Моррисона', height=2.5, alpha=0.5)
+
+ax0.barh(dl.z, fn_d_new[0, ind_0, :], color='red', label='уточненная ф.', height=2.5, alpha=0.5)
+ax2.barh(dl.z, fn_i_new[0, ind_0, :], color='red', label='уточненная ф.', height=2.5, alpha=0.5)
+ax1.barh(dl.z, fn_d_new[1, ind_1, :], color='red', label='уточненная ф.', height=2.5, alpha=0.5)
+ax3.barh(dl.z, fn_i_new[1, ind_1, :], color='red', label='уточненная ф.', height=2.5, alpha=0.5)
+
 ax0.set_title(f"В точке x={x[0]:.2f}")
+ax0.set_ylabel("Глубина, м\nF_D(z)")
+ax0.invert_yaxis()
 ax0.legend()
 ax0.grid()
 
-ind = np.nanargmax(np.abs(F_n[1]))
-ax1.barh(dl.z, fn_d[1, ind, :], color='yellow', label='F_D(z), Н/м')
-ax1.invert_yaxis()
 ax1.set_title(f"В точке x={x[1]:.2f}")
-ax1.barh(dl.z, fn_i[1, ind, :], color='blue', label='F_I(z), Н/м')
+ax1.invert_yaxis()
 ax1.legend()
 ax1.grid()
+
+ax2.set_ylabel("Глубина, м\nF_I(z)")
+ax2.invert_yaxis()
+ax2.legend()
+ax2.set_xlabel("Н/м")
+ax2.grid()
+
+ax3.set_xlabel("Н/м")
+ax3.legend()
+ax3.grid()
 
 plt.gcf().set_size_inches(15, 8)
 plt.savefig(
     f"loads_2.png",
     dpi=500, bbox_inches="tight")
+
+# ax0.barh(dl.z, fn_d[0, ind, :], color='yellow', label='F_D(z), Н/м')
+# ax0.set_ylabel("Глубина, м")
+# ax0.invert_yaxis()
+# ax0.barh(dl.z, fn_i[0, ind, :], color='blue', label='F_I(z), Н/м')
+# ax0.set_title(f"В точке x={x[0]:.2f}")
+# ax0.legend()
+# ax0.grid()
+#
+# ind = np.nanargmax(np.abs(F_n[1]))
+# ax1.barh(dl.z, fn_d[1, ind, :], color='yellow', label='F_D(z), Н/м')
+# ax1.invert_yaxis()
+# ax1.set_title(f"В точке x={x[1]:.2f}")
+# ax1.barh(dl.z, fn_i[1, ind, :], color='blue', label='F_I(z), Н/м')
+# ax1.legend()
+# ax1.grid()
+#
+# plt.gcf().set_size_inches(15, 8)
+# plt.savefig(
+#     f"loads_2.png",
+#     dpi=500, bbox_inches="tight")
 
 plt.show()
 exit(0)

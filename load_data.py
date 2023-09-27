@@ -181,7 +181,7 @@ class SuntansData(object):
             steps += 1
         return u_x, w_x, s_x, steps
 
-    def calc_loads_momentum(self, x, rho0, t_from=0, t_to=np.Inf, new_formula=True):
+    def calc_loads_momentum(self, x, rho0, t_from=0, t_to=np.Inf, new_formula=True, with_sec_part=True):
         u_x, w_x, s_x, steps = self.get_u_w_s_for_x(x, t_from, t_to)
         rho = rho0 * (1 + s_x)
         Cd = 1
@@ -233,13 +233,14 @@ class SuntansData(object):
             if new_formula:
                 # new Folmula:
                 # ??? g
-                fn_drag = g * real_rho[:, 0:z_ind] * R * Cd * real_u[:, 0:z_ind] * abs(real_u[:, 0:z_ind])
-                fn_inertia = g * real_rho[:, 0:z_ind] * R * R * np.pi * Cm * (
-                        real_u[:, 0:z_ind] * du_dx + real_w[:, 0:z_ind] * du_dz)
+                fn_drag = real_rho[:, 0:z_ind] * R * Cd * real_u[:, 0:z_ind] * abs(real_u[:, 0:z_ind])
+                fn_inertia = real_rho[:, 0:z_ind] * R * R * np.pi * Cm * real_u[:, 0:z_ind] * du_dx
+                if with_sec_part:
+                    fn_inertia += real_rho[:, 0:z_ind] * R * R * np.pi * Cm * real_w[:, 0:z_ind] * du_dz
             else:
                 # Morison Formula:
-                fn_drag = real_rho * g * R * Cd * real_u * abs(real_u)
-                fn_inertia = real_rho * g * R * np.pi * R * Cm * du_dt
+                fn_drag = real_rho * R * Cd * real_u * abs(real_u)
+                fn_inertia = real_rho * R * np.pi * R * Cm * du_dt
             fn = fn_drag + fn_inertia
             for z in range(0, z_ind):
                 fn_d[i, :, z] = fn_drag[:, z]
