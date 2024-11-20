@@ -92,6 +92,17 @@ class SuntansData(object):
         w = interpolate_by2points(w, self.sortx, self.y1inds, self.y2inds)
         return s, T, u, v, w
 
+    def load_h(self, step):
+        f = self.rundata_folder + "fs.dat"
+        common_seek = step * self.sungrid.Nc * self.sizeofdouble
+        arr = np.fromfile(f, dtype=np.double,
+                          count=self.sungrid.Nc,
+                          offset=common_seek)
+        # arr = arr.reshape(self.sungrid.Nkmax, self.sungrid.Nc)
+        arr[arr == self.EMPTY] = np.NaN
+        h = interpolate_by2points(arr, self.sortx, self.y1inds, self.y2inds)
+        return h
+
     def load_sundat_file(self, file):
         ret = {}
         f = self.rundata_folder + file
@@ -230,17 +241,15 @@ class SuntansData(object):
                 for z in range(0, z_ind - 1):
                     du_dz[:, z] = du[:, z] / np.abs(self.z[z] - self.z[z + 1])
 
+            # Morison Formula:
+            fn_drag = real_rho[:, 0:z_ind] * R * Cd * real_u[:, 0:z_ind] * abs(real_u[:, 0:z_ind])
+            fn_inertia = real_rho * R * np.pi * R * Cm * du_dt
             if new_formula:
                 # new Folmula:
                 # ??? g
-                fn_drag = real_rho[:, 0:z_ind] * R * Cd * real_u[:, 0:z_ind] * abs(real_u[:, 0:z_ind])
-                fn_inertia = real_rho[:, 0:z_ind] * R * R * np.pi * Cm * real_u[:, 0:z_ind] * du_dx
+                fn_inertia += real_rho[:, 0:z_ind] * R * R * np.pi * Cm * real_u[:, 0:z_ind] * du_dx
                 if with_sec_part:
                     fn_inertia += real_rho[:, 0:z_ind] * R * R * np.pi * Cm * real_w[:, 0:z_ind] * du_dz
-            else:
-                # Morison Formula:
-                fn_drag = real_rho * R * Cd * real_u * abs(real_u)
-                fn_inertia = real_rho * R * np.pi * R * Cm * du_dt
             fn = fn_drag + fn_inertia
             for z in range(0, z_ind):
                 fn_d[i, :, z] = fn_drag[:, z]

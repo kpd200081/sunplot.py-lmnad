@@ -1,3 +1,5 @@
+import os
+
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
@@ -11,9 +13,8 @@ interpolate_field
 
 # rundata_folder = '/home/pkuznetsov/lmnad/data-success/'
 # rundata_folder = '/home/pkuznetsov/lmnad/sec2/data/'
-rundata_folder = '/home/pkuznetsov/lmnad/sec3/data/'
-step = 0
-h = 38
+rundata_folder = '/home/pkuznetsov/lmnad/sec2_2/data/'
+h = 0
 
 
 def plt_set_fonts():
@@ -39,7 +40,7 @@ def plt_set_fonts():
 cb = None
 
 
-def plot_all_for_step(step, fig, ax0, ax1, ax2, ax3, draw_cb):
+def plot_all_for_step(step, ax0, ax1, ax2, ax3, draw_cb):
     global cb
     s, t, u, v, w = dl.load_data_for_step(step)
 
@@ -55,7 +56,7 @@ def plot_all_for_step(step, fig, ax0, ax1, ax2, ax3, draw_cb):
     ax0.set_title("s(x,z,t), t={:.2f} ч".format(dl.step_to_h(step)))
     ax0.set_ylabel("Глубина, м")
     if draw_cb:
-        cb1 = fig.colorbar(c, ax=ax0)
+        cb1 = plt.figure(1).colorbar(c, ax=ax0)
         cb1.ax.set_title("аном. плот.")
 
     # c = ax3.contourf(dl.x, dl.z, s, cmap='jet', levels=60)
@@ -75,7 +76,7 @@ def plot_all_for_step(step, fig, ax0, ax1, ax2, ax3, draw_cb):
     # нужно перерисовывать из-за contourf вместо pcolormesh
     # pcolormesh сильно менее информативный
     # if draw_cb:
-    cb = fig.colorbar(c, ax=ax3)
+    cb = plt.figure(2).colorbar(c, ax=ax3)
     cb.ax.set_title("м/с^2")
 
     c = ax1.pcolormesh(dl.x, dl.z, u, cmap='jet')
@@ -83,7 +84,7 @@ def plot_all_for_step(step, fig, ax0, ax1, ax2, ax3, draw_cb):
     ax1.set_title("u(x,z,t), t={:.2f} ч".format(dl.step_to_h(step)))
     c.set_clim(-0.5, 0.5)
     if draw_cb:
-        cb1 = fig.colorbar(c, ax=ax1)
+        cb1 = plt.figure(3).colorbar(c, ax=ax1)
         cb1.ax.set_title("м/c")
 
     c = ax2.pcolormesh(dl.x, dl.z, w, cmap='jet')
@@ -92,7 +93,7 @@ def plot_all_for_step(step, fig, ax0, ax1, ax2, ax3, draw_cb):
     ax2.set_xlabel("Расстояние, км")
     c.set_clim(-0.05, 0.05)
     if draw_cb:
-        cb1 = fig.colorbar(c, ax=ax2)
+        cb1 = plt.figure(4).colorbar(c, ax=ax2)
         cb1.ax.set_title("м/с")
 
 
@@ -213,111 +214,120 @@ x = [100, 110]  # sec3
 # ax3.invert_yaxis()
 # plt.colorbar(c, ax=ax3)
 #
-F_n_old, M_old, steps, fn_d_old, fn_i_old = dl.calc_loads_momentum(x, 1025.09, 0, np.Inf, False)
-t_arr = np.linspace(0, dl.step_to_h(steps - 1), steps)
-t_cut = 10
-F_n_old[:, 0:t_cut] = np.nan
-M_old[:, 0:t_cut] = np.nan
-# fn_d[:, 0:t_cut, :] = np.nan
-# fn_i[:, 0:t_cut, :] = np.nan
-
-F_n_new, M_new, steps, fn_d_new, fn_i_new = dl.calc_loads_momentum(x, 1025.09, 0, np.Inf, True)
-F_n_new[:, 0:t_cut] = np.nan
-M_new[:, 0:t_cut] = np.nan
-
-fig = plt.figure()
-fig.show()
-figManager = plt.get_current_fig_manager()
-figManager.window.showMaximized()
-gs = gridspec.GridSpec(2, 2, hspace=0.3, wspace=0.15)
-ax0 = fig.add_subplot(gs[0, 0])
-ax1 = fig.add_subplot(gs[0, 1])
-ax2 = fig.add_subplot(gs[1, 0])
-ax3 = fig.add_subplot(gs[1, 1])
-
-ax0.plot(t_arr / 12.42, F_n_old[0] / 100000, color='blue', label='F_n(t), 10^5*Н (ф. Моррисона)')
-ax2.plot(t_arr / 12.42, M_old[0] / 1000000, color='blue', label='M(t), MН*м (ф. Моррисона)')
-ax1.plot(t_arr / 12.42, F_n_old[1] / 100000, color='blue', label='F_n(t), 10^5*Н (ф. Моррисона)')
-ax3.plot(t_arr / 12.42, M_old[1] / 1000000, color='blue', label='M(t), MН*м (ф. Моррисона)')
-
-ax0.plot(t_arr / 12.42, F_n_new[0] / 100000, color='red', label='F_n(t), 10^5*Н (уточненная ф.)')
-ax2.plot(t_arr / 12.42, M_new[0] / 1000000, color='red', label='M(t), MН*м (уточненная ф.)')
-ax1.plot(t_arr / 12.42, F_n_new[1] / 100000, color='red', label='F_n(t), 10^5*Н (уточненная ф.)')
-ax3.plot(t_arr / 12.42, M_new[1] / 1000000, color='red', label='M(t), MН*м (уточненная ф.)')
-
-ax0.set_title(f"В точке x={x[0]:.2f}")
-ax0.set_xlim([0.3, 5.5])
-ax0.legend()
-ax0.grid()
-
-ax1.set_title(f"В точке x={x[1]:.2f}")
-ax1.set_xlim([0.3, 5.5])
-ax1.legend()
-ax1.grid()
-
-ax2.set_xlim([0.3, 5.5])
-ax2.legend()
-ax2.set_xlabel("Время/T_M2")
-ax2.grid()
-
-ax3.set_xlim([0.3, 5.5])
-ax3.set_xlabel("Время/T_M2")
-ax3.legend()
-ax3.grid()
-
-plt.gcf().set_size_inches(15, 8)
-plt.savefig(
-    f"loads_1.png",
-    dpi=500, bbox_inches="tight")
-
-ind_0 = np.nanargmax(np.abs(F_n_old[0]))
-ind_1 = np.nanargmax(np.abs(F_n_old[1]))
-
-fig = plt.figure()
-fig.show()
-figManager = plt.get_current_fig_manager()
-figManager.window.showMaximized()
-gs = gridspec.GridSpec(2, 2, hspace=0.3, wspace=0.15)
-ax0 = fig.add_subplot(gs[0, 0])
-ax1 = fig.add_subplot(gs[0, 1])
-ax2 = fig.add_subplot(gs[1, 0])
-ax3 = fig.add_subplot(gs[1, 1])
-
-ax0.barh(dl.z, fn_d_old[0, ind_0, :], color='blue', label='ф. Моррисона', height=2.5, alpha=0.5)
-ax2.barh(dl.z, fn_i_old[0, ind_0, :], color='blue', label='ф. Моррисона', height=2.5, alpha=0.5)
-ax1.barh(dl.z, fn_d_old[1, ind_1, :], color='blue', label='ф. Моррисона', height=2.5, alpha=0.5)
-ax3.barh(dl.z, fn_i_old[1, ind_1, :], color='blue', label='ф. Моррисона', height=2.5, alpha=0.5)
-
-ax0.barh(dl.z, fn_d_new[0, ind_0, :], color='red', label='уточненная ф.', height=2.5, alpha=0.5)
-ax2.barh(dl.z, fn_i_new[0, ind_0, :], color='red', label='уточненная ф.', height=2.5, alpha=0.5)
-ax1.barh(dl.z, fn_d_new[1, ind_1, :], color='red', label='уточненная ф.', height=2.5, alpha=0.5)
-ax3.barh(dl.z, fn_i_new[1, ind_1, :], color='red', label='уточненная ф.', height=2.5, alpha=0.5)
-
-ax0.set_title(f"В точке x={x[0]:.2f}")
-ax0.set_ylabel("Глубина, м\nF_D(z)")
-ax0.invert_yaxis()
-ax0.legend()
-ax0.grid()
-
-ax1.set_title(f"В точке x={x[1]:.2f}")
-ax1.invert_yaxis()
-ax1.legend()
-ax1.grid()
-
-ax2.set_ylabel("Глубина, м\nF_I(z)")
-ax2.invert_yaxis()
-ax2.legend()
-ax2.set_xlabel("Н/м")
-ax2.grid()
-
-ax3.set_xlabel("Н/м")
-ax3.legend()
-ax3.grid()
-
-plt.gcf().set_size_inches(15, 8)
-plt.savefig(
-    f"loads_2.png",
-    dpi=500, bbox_inches="tight")
+# F_n_old, M_old, steps, fn_d_old, fn_i_old = dl.calc_loads_momentum(x, 1025.09, 0, np.Inf, False)
+# t_arr = np.linspace(0, dl.step_to_h(steps - 1), steps)
+# t_cut = 10
+# F_n_old[:, 0:t_cut] = np.nan
+# M_old[:, 0:t_cut] = np.nan
+# # fn_d[:, 0:t_cut, :] = np.nan
+# # fn_i[:, 0:t_cut, :] = np.nan
+#
+# F_n_new, M_new, steps, fn_d_new, fn_i_new = dl.calc_loads_momentum(x, 1025.09, 0, np.Inf, True)
+# F_n_new[:, 0:t_cut] = np.nan
+# M_new[:, 0:t_cut] = np.nan
+#
+# fig = plt.figure()
+# fig.show()
+# figManager = plt.get_current_fig_manager()
+# figManager.window.showMaximized()
+# gs = gridspec.GridSpec(2, 2, hspace=0.3, wspace=0.15)
+# ax0 = fig.add_subplot(gs[0, 0])
+# ax1 = fig.add_subplot(gs[0, 1])
+# ax2 = fig.add_subplot(gs[1, 0])
+# ax3 = fig.add_subplot(gs[1, 1])
+#
+# ax0.plot(t_arr / 12.42, F_n_old[0] / 100000, color='blue', label='(1)')
+# ax2.plot(t_arr / 12.42, M_old[0] / 1000000, color='blue', label='(1)')
+# ax1.plot(t_arr / 12.42, F_n_old[1] / 100000, color='blue', label='(1)')
+# ax3.plot(t_arr / 12.42, M_old[1] / 1000000, color='blue', label='(1)')
+#
+# ax0.plot(t_arr / 12.42, F_n_new[0] / 100000, color='red', label='(2)')
+# ax2.plot(t_arr / 12.42, M_new[0] / 1000000, color='red', label='(2)')
+# ax1.plot(t_arr / 12.42, F_n_new[1] / 100000, color='red', label='(2)')
+# ax3.plot(t_arr / 12.42, M_new[1] / 1000000, color='red', label='(2)')
+#
+# ax0.set_title(f"В точке x={x[0]:.2f}")
+# ax0.set_xlim([0.3, 5.5])
+# ax0.set_ylabel("F_n(t), 10^5*Н")
+# ax0.legend()
+# ax0.grid()
+#
+# ax1.set_title(f"В точке x={x[1]:.2f}")
+# ax1.set_xlim([0.3, 5.5])
+# ax1.legend()
+# ax1.grid()
+#
+# ax2.set_xlim([0.3, 5.5])
+# ax2.legend()
+# ax2.set_ylabel("M(t), MН*м ")
+# ax2.set_xlabel("Время/T_M2")
+# ax2.grid()
+#
+# ax3.set_xlim([0.3, 5.5])
+# ax3.set_xlabel("Время/T_M2")
+# ax3.legend()
+# ax3.grid()
+#
+# plt.gcf().set_size_inches(15, 8)
+# plt.savefig(
+#     f"loads_1.png",
+#     dpi=500, bbox_inches="tight")
+#
+# ind_0 = np.nanargmax(np.abs(F_n_old[0]))
+# ind_1 = np.nanargmax(np.abs(F_n_old[1]))
+#
+# t0 = 4.85
+# t1 = 4.75
+# ind_0 = np.nanargmin(np.abs(t_arr - t0 * 12.42))
+# ind_1 = np.nanargmin(np.abs(t_arr - t1 * 12.42))
+#
+# fig = plt.figure()
+# fig.show()
+# figManager = plt.get_current_fig_manager()
+# figManager.window.showMaximized()
+# gs = gridspec.GridSpec(2, 2, hspace=0.3, wspace=0.15)
+# ax0 = fig.add_subplot(gs[0, 0])
+# ax1 = fig.add_subplot(gs[0, 1])
+# ax2 = fig.add_subplot(gs[1, 0])
+# ax3 = fig.add_subplot(gs[1, 1])
+#
+# ax0.barh(dl.z, fn_d_old[0, ind_0, :], color='blue', label='(1)', height=2.5, alpha=0.5)
+# ax2.barh(dl.z, fn_i_old[0, ind_0, :], color='blue', label='(1)', height=2.5, alpha=0.5)
+# ax1.barh(dl.z, fn_d_old[1, ind_1, :], color='blue', label='(1)', height=2.5, alpha=0.5)
+# ax3.barh(dl.z, fn_i_old[1, ind_1, :], color='blue', label='(1)', height=2.5, alpha=0.5)
+#
+# ax0.barh(dl.z, fn_d_new[0, ind_0, :], color='red', label='(2)', height=2.5, alpha=0.5)
+# ax2.barh(dl.z, fn_i_new[0, ind_0, :], color='red', label='(2)', height=2.5, alpha=0.5)
+# ax1.barh(dl.z, fn_d_new[1, ind_1, :], color='red', label='(2)', height=2.5, alpha=0.5)
+# ax3.barh(dl.z, fn_i_new[1, ind_1, :], color='red', label='(2)', height=2.5, alpha=0.5)
+#
+# ax0.set_title(f"В точке x={x[0]:.2f}, t={t0} 1/T_M2")
+# # ax0.set_title(f"В точке x={x[0]:.2f}")
+# ax0.set_ylabel("Глубина, м\nF_D(z)")
+# ax0.invert_yaxis()
+# ax0.legend()
+# ax0.grid()
+#
+# ax1.set_title(f"В точке x={x[1]:.2f}, t={t1} 1/T_M2")
+# # ax1.set_title(f"В точке x={x[1]:.2f}")
+# ax1.invert_yaxis()
+# ax1.legend()
+# ax1.grid()
+#
+# ax2.set_ylabel("Глубина, м\nF_I(z)")
+# ax2.invert_yaxis()
+# ax2.legend()
+# ax2.set_xlabel("Н/м")
+# ax2.grid()
+#
+# ax3.set_xlabel("Н/м")
+# ax3.legend()
+# ax3.grid()
+#
+# plt.gcf().set_size_inches(15, 8)
+# plt.savefig(
+#     f"loads_2.png",
+#     dpi=500, bbox_inches="tight")
 
 # ax0.barh(dl.z, fn_d[0, ind, :], color='yellow', label='F_D(z), Н/м')
 # ax0.set_ylabel("Глубина, м")
@@ -340,54 +350,107 @@ plt.savefig(
 #     f"loads_2.png",
 #     dpi=500, bbox_inches="tight")
 
-plt.show()
-exit(0)
+# plt.show()
+# exit(0)
 #
-fig = plt.figure()
-fig.show()
-figManager = plt.get_current_fig_manager()
-figManager.window.showMaximized()
-
-gs = gridspec.GridSpec(2, 2, hspace=0.2, wspace=0.2)
-ax0 = fig.add_subplot(gs[0, 0])  # row 0, col 0
-ax1 = fig.add_subplot(gs[0, 1])  # row 1, col 0
-ax2 = fig.add_subplot(gs[1, 1])  # row 1, col 1
-ax3 = fig.add_subplot(gs[1, 0])  # row 0, col 1
+# fig = plt.figure()
+# fig.show()
+# figManager = plt.get_current_fig_manager()
+# figManager.window.showMaximized()
+#
+# gs = gridspec.GridSpec(2, 2, hspace=0.2, wspace=0.2)
+# ax0 = fig.add_subplot(gs[0, 0])  # row 0, col 0
+# ax1 = fig.add_subplot(gs[0, 1])  # row 1, col 0
+# ax2 = fig.add_subplot(gs[1, 1])  # row 1, col 1
+# ax3 = fig.add_subplot(gs[1, 0])  # row 0, col 1
+plt.figure(1)
+ax0 = plt.gca()
+plt.figure(2)
+ax1 = plt.gca()
+plt.figure(3)
+ax2 = plt.gca()
+plt.figure(4)
+ax3 = plt.gca()
 
 step = dl.h_to_step(h)
-plot_all_for_step(step, fig, ax0, ax1, ax2, ax3, True)
+plot_all_for_step(step, ax0, ax1, ax2, ax3, True)
 plt.gcf().set_size_inches(15, 8)
-# plt.show()
-plt.savefig(f"out_{h:.2f}.png", dpi=500, bbox_inches="tight")
 
-plt.figure()
-s, t, u, v, w = dl.load_data_for_step(step)
-# c = plt.gca().pcolormesh(dl.x, dl.z, s, cmap='jet')
-c = plt.gca().contourf(dl.x, dl.z, s, cmap='jet', levels=75)
-plt.gca().set_title("s(x,z,t), t={:.2f} ч".format(dl.step_to_h(step)))
-plt.gca().set_ylabel("Глубина, м")
-plt.xlim((19, 61))
-plt.ylim((0, 600))
-plt.gca().invert_yaxis()
-cb1 = fig.colorbar(c, ax=plt.gca())
-cb1.ax.set_title("аном. плот.")
-plt.gcf().set_size_inches(15, 8)
-# plt.show()
-plt.savefig(f"out_det_{h:.2f}.png", dpi=500, bbox_inches="tight")
+fig = plt.figure()
+max = int(dl.nsteps / dl.ntout)
+data = np.zeros((max, len(dl.x)))
+for step in range(0, max):
+    fs = dl.load_h(step)
+    data[step, :] = fs
+c = plt.contourf(dl.x, dl.step_to_h(np.arange(0, max)), data, cmap="jet", levels=60)
+cb1 = fig.colorbar(c)
+cb1.ax.set_title("м")
+plt.xlabel("Расстояние, км")
+plt.ylabel("Время, ч")
+plt.show()
 
-# do_tight = True
-# draw_cb = True
-# os.mkdir("video")
-# for s in np.arange(dl.sec_to_step(dl.runtime_sec())):
-#     plot_all_for_step(s, fig, ax0, ax1, ax2, ax3, draw_cb)
-#     if do_tight:
-#         gs.tight_layout(fig)
-#     plt.pause(0.001)
-#     # plt.draw()
-#     plt.savefig(f"video/file{s:03d}.png", dpi=750)
-#     draw_cb = False
-#     if s == 3:
-#         do_tight = False
+fig = plt.figure()
+plt.ion()
+for step in range(max):
+    fs = dl.load_h(step)
+    plt.plot(dl.x, fs)
+    plt.ylim([-20, 20])
+    plt.pause(0.15)
+    if step < max - 1:
+        fig.clf()
+# # plt.show()
+# plt.savefig(f"out_{h:.2f}.png", dpi=500, bbox_inches="tight")
+#
+# plt.figure()
+# s, t, u, v, w = dl.load_data_for_step(step)
+# # c = plt.gca().pcolormesh(dl.x, dl.z, s, cmap='jet')
+# c = plt.gca().contourf(dl.x, dl.z, s, cmap='jet', levels=75)
+# plt.gca().set_title("s(x,z,t), t={:.2f} ч".format(dl.step_to_h(step)))
+# plt.gca().set_ylabel("Глубина, м")
+# plt.xlim((19, 61))
+# plt.ylim((0, 600))
+# plt.gca().invert_yaxis()
+# cb1 = fig.colorbar(c, ax=plt.gca())
+# cb1.ax.set_title("аном. плот.")
+# plt.gcf().set_size_inches(15, 8)
+# # plt.show()
+# plt.savefig(f"out_det_{h:.2f}.png", dpi=500, bbox_inches="tight")
+plt.ioff()
+plt.show()
+
+do_tight = True
+draw_cb = True
+os.mkdir("video")
+# plt.draw()
+
+plt.figure(1)
+ax0 = plt.gca()
+plt.figure(2)
+ax1 = plt.gca()
+plt.figure(3)
+ax2 = plt.gca()
+plt.figure(4)
+ax3 = plt.gca()
+
+for s in np.arange(dl.sec_to_step(dl.runtime_sec())):
+    plot_all_for_step(s, ax0, ax1, ax2, ax3, draw_cb)
+    # if do_tight:
+    #     gs.tight_layout(fig)
+    plt.pause(0.001)
+    # plt.draw()
+    plt.figure(1)
+    plt.savefig(f"video/s{s:03d}.png", dpi=750)
+    plt.figure(1)
+    plt.savefig(f"video/u{s:03d}.png", dpi=750)
+    plt.figure(1)
+    plt.savefig(f"video/w{s:03d}.png", dpi=750)
+    plt.figure(1)
+    plt.savefig(f"video/du{s:03d}.png", dpi=750)
+    draw_cb = False
+    # if s == 3:
+    #     do_tight = False
+
+quit()
 # count = 0
 # line = np.zeros(dl.x.size, dtype=np.float64)
 # for step in range(2, 35):
